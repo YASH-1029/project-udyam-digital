@@ -217,3 +217,19 @@ def test_universal_multilingual_no_language_restriction(advisor: AdvisorAgent):
     res_fr = advisor.process_turn("bonjour")
     assert res_fr.display_latin.startswith("Bonjour!")
     assert not re.search(r"[\u0C00-\u0C7F]", res_fr.display_native)
+
+
+def test_turn2_only_udyam_resolves_and_calculates_bundle(advisor: AdvisorAgent):
+    """Verifies that answering 'only udyam' to GST question completes profile slots
+    and computes the recommended bundle without repeating the question.
+    """
+    from backend.app.models.schemas import MSMEProfileSlots
+
+    prev = MSMEProfileSlots(segment="micro", city_tier=1, employee_count=4)
+    res = advisor.process_turn("only udyam", previous_slots=prev)
+
+    assert res.slots.is_complete is True
+    assert res.slots.has_gstin is False
+    assert len(res.recommended_skus) > 0
+    assert res.quote is not None
+    assert "Recommended Bundle" in res.display_markdown or "Optimal" in res.display_markdown or len(res.display_markdown) > 50

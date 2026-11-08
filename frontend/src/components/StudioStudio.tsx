@@ -215,6 +215,10 @@ export const StudioStudio: React.FC<StudioStudioProps> = ({
   const [activeArchetype, setActiveArchetype] = useState<string | null>("clinic");
 
   const initializedRef = useRef(false);
+  const latestSlotsRef = useRef<MSMEProfileSlots | null>(profileSlots);
+  useEffect(() => {
+    if (profileSlots) latestSlotsRef.current = profileSlots;
+  }, [profileSlots]);
 
   // Auto-scroll inner chat container smoothly without jumping page
   const scrollToBottom = () => {
@@ -381,13 +385,15 @@ export const StudioStudio: React.FC<StudioStudioProps> = ({
         content: scriptMode === "latin" ? (m.textLatin || m.textNative) : (m.textNative || m.textLatin),
       }));
 
+      const activeSlots = latestSlotsRef.current || profileSlots;
       const res = await sendChatMessage(
         q,
-        profileSlots,
+        activeSlots,
         null, // Unconstrained AI multilingual auto-detect for all 22 Indian languages
         effectiveMode,
         historyPayload
       );
+      latestSlotsRef.current = res.slots;
       onProfileUpdated(res.slots, res.recommended_skus);
       if (res.recommended_skus && res.recommended_skus.length > 0) {
         setSelectedProductIds(res.recommended_skus);

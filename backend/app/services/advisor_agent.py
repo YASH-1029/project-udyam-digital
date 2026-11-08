@@ -356,10 +356,27 @@ Return STRICTLY valid JSON:
             "ജിഎസ്ടി ഉണ്ട്", "ଜିଏସଟି ଅଛି"
         ]
 
-        if re.search(r"\b(no\s*gst(?:in)?|without\s*gst(?:in)?|bina\s*gst|gst(?:in)?\s*(?:nahi|nhi|nai|ni|ledu|ledhu|illa|illai|nei|nathi)\b|dont\s*have\s*gst(?:in)?|don't\s*have\s*gst(?:in)?|gst\s*number\s*(?:nahi|nhi|nai|ni)|gst\s*vst\s*(?:kuch\s*)?(?:nahi|nhi|nai|ni)|zero\s*gst|sirf\s*udyam|udyam\s*only)\b", norm_text) or any(w in norm_text for w in no_gst_regional):
+        no_gst_regex = (
+            r"\b(no\s*gst(?:in)?|without\s*gst(?:in)?|bina\s*gst|gst(?:in)?\s*(?:nahi|nhi|nai|ni|ledu|ledhu|illa|illai|nei|nathi)\b|"
+            r"dont\s*have\s*gst(?:in)?|don't\s*have\s*gst(?:in)?|gst\s*number\s*(?:nahi|nhi|nai|ni)|gst\s*vst\s*(?:kuch\s*)?(?:nahi|nhi|nai|ni)|"
+            r"zero\s*gst|sirf\s*udyam|udyam\s*only|only\s*udyam|just\s*udyam|udyam\s*alone|udyam\s*matrame|udyam\s*hai|udyam\s*certificate|"
+            r"udyam\s*registration|keval\s*udyam|\budyam\b)"
+        )
+        has_gst_regex = (
+            r"\b(have\s*gst(?:in)?|has\s*gst(?:in)?|with\s*gst(?:in)?|gst\s*registered|gst\s*(?:hai|h\b|undi|undhi|irukku|ache|che|ahe|ide)|"
+            r"gstin\s*(?:hai|h\b)|gst\s*number\s*(?:hai|h\b)|gstin\s*available|active\s*gst(?:in)?|gst\s*(?:number\s*)?mil\s*gaya|mil\s*gaya\s*gst|"
+            r"yes\s*gst|have\s*gstin|gstin\s*registered)"
+        )
+
+        if re.search(no_gst_regex, norm_text) or any(w in norm_text for w in no_gst_regional):
             slots.has_gstin = False
-        elif re.search(r"\b(have\s*gst(?:in)?|has\s*gst(?:in)?|with\s*gst(?:in)?|gst\s*registered|gst\s*(?:hai|h\b|undi|undhi|irukku|ache|che|ahe|ide)|gstin\s*(?:hai|h\b)|gst\s*number\s*(?:hai|h\b)|gstin\s*available|active\s*gst(?:in)?|gst\s*(?:number\s*)?mil\s*gaya|mil\s*gaya\s*gst)\b", norm_text) or any(w in norm_text for w in has_gst_regional):
+        elif re.search(has_gst_regex, norm_text) or any(w in norm_text for w in has_gst_regional):
             slots.has_gstin = True
+        elif existing_slots and ("gstin_status" in existing_slots.missing_slots or existing_slots.has_gstin is None):
+            if re.search(r"\b(no|nope|not|dont|don't|nahi|nhi|ledu|illa|illai|nei|nathi|zero|na|neither|none|without)\b", norm_text):
+                slots.has_gstin = False
+            elif re.search(r"\b(yes|yeah|yep|haan|ha|hai|h\b|avunu|undu|aam|che|ache|registered|available|active)\b", norm_text):
+                slots.has_gstin = True
         elif slots.segment in {"mfg", "multi"} and slots.has_gstin is None:
             # Factories and multi-site enterprise chains in India require statutory GST registration
             slots.has_gstin = True
